@@ -1,7 +1,7 @@
 # OutputCollectors.jl Documentation
 
 This is the reference documentation of
-[`OutputCollectors.jl`](https://github.com/giordano/OutputCollectors.jl)
+[`OutputCollectors.jl`](https://github.com/JuliaPackaging/OutputCollectors.jl).
 
 ## Index
 ```@index
