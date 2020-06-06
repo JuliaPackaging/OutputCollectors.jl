@@ -1,3 +1,5 @@
+module OutputCollectors
+
 # In this file, we define a helper class that will run subprocesses, collecting
 # the stdout and stderr, timestamped such that we can merge the two streams
 # intelligently after the fact, or keep them separate for proper analysis.
@@ -355,3 +357,5 @@ function tee(c::OutputCollector; colored::Bool=Base.have_color,
 
     return tee_task
 end
+
+end # module OutputCollectors
