@@ -104,6 +104,10 @@ mutable struct OutputCollector
     end
 end
 
+function Base.show(io::IO, c::OutputCollector)
+    print(io, "OutputCollector(cmd, P, $(c.event), $(c.verbose), $(c.tail_error), $(c.done))")
+end
+
 """
     OutputCollector(cmd::AbstractCmd; verbose::Bool = false)
 
@@ -284,78 +288,85 @@ function tail(collector::OutputCollector; len::Int = 100,
     return out[idx+1:end]
 end
 
+function tee(x...; kwargs...)
+    println("tee called with arguments:\n$x\nand kwargs:\n$kwargs\n")
+    return
+end
+
 """
     tee(c::OutputCollector; colored::Bool = false, stream::IO = stdout)
 
 Spawn a background task to incrementally output lines from `collector` to the
 standard output, optionally colored.
 """
-function tee(c::OutputCollector; colored::Bool=Base.have_color,
-             stream::IO=stdout)
-    tee_task = @async begin
-        out_idx = 1
-        err_idx = 1
-        out_lines = c.stdout_linestream.lines
-        err_lines = c.stderr_linestream.lines
+#function tee(c::OutputCollector; colored::Bool=Base.have_color,
+#             stream::IO=stdout)
+#    println("normal tee called")
+#    return
+    # tee_task = @async begin
+    #     out_idx = 1
+    #     err_idx = 1
+    #     out_lines = c.stdout_linestream.lines
+    #     err_lines = c.stderr_linestream.lines
 
-        # Helper function to print out the next line of stdout/stderr
-        function print_next_line()
-            timestr = Libc.strftime("[%T] ", time())
-            # We know we have data, so figure out if it's for stdout, stderr
-            # or both, and we need to choose which to print based on timestamp
-            printstyled(stream, timestr; bold=true)
-            if length(out_lines) >= out_idx
-                if length(err_lines) >= err_idx
-                    # If we've got input waiting from both lines, then output
-                    # the one with the lowest capture time
-                    if out_lines[out_idx][1] < err_lines[err_idx][1]
-                        # Print the out line as it's older
-                        print(stream, out_lines[out_idx][2])
-                        out_idx += 1
-                    else
-                        # Print the err line as it's older
-                        printstyled(stream, err_lines[err_idx][2]; color=:red)
-                        print(stream)
-                        err_idx += 1
-                    end
-                else
-                    # Print the out line that is the only one waiting
-                    print(stream, out_lines[out_idx][2])
-                    out_idx += 1
-                end
-            else
-                # Print the err line that is the only one waiting
-                printstyled(stream, err_lines[err_idx][2]; color=:red)
-                print(stream)
-                err_idx += 1
-            end
-        end
+    #     # Helper function to print out the next line of stdout/stderr
+    #     function print_next_line()
+    #         timestr = Libc.strftime("[%T] ", time())
+    #         # We know we have data, so figure out if it's for stdout, stderr
+    #         # or both, and we need to choose which to print based on timestamp
+    #         printstyled(stream, timestr; bold=true)
+    #         if length(out_lines) >= out_idx
+    #             if length(err_lines) >= err_idx
+    #                 # If we've got input waiting from both lines, then output
+    #                 # the one with the lowest capture time
+    #                 if out_lines[out_idx][1] < err_lines[err_idx][1]
+    #                     # Print the out line as it's older
+    #                     print(stream, out_lines[out_idx][2])
+    #                     out_idx += 1
+    #                 else
+    #                     # Print the err line as it's older
+    #                     printstyled(stream, err_lines[err_idx][2]; color=:red)
+    #                     print(stream)
+    #                     err_idx += 1
+    #                 end
+    #             else
+    #                 # Print the out line that is the only one waiting
+    #                 print(stream, out_lines[out_idx][2])
+    #                 out_idx += 1
+    #             end
+    #         else
+    #             # Print the err line that is the only one waiting
+    #             printstyled(stream, err_lines[err_idx][2]; color=:red)
+    #             print(stream)
+    #             err_idx += 1
+    #         end
+    #     end
 
-        # First thing, wait for some input.  This avoids us trying to inspect
-        # the liveliness of the linestreams before they've even started.
-        wait(c.event)
+    #     # First thing, wait for some input.  This avoids us trying to inspect
+    #     # the liveliness of the linestreams before they've even started.
+    #     wait(c.event)
 
-        while alive(c.stdout_linestream) || alive(c.stderr_linestream)
-            if length(out_lines) >= out_idx || length(err_lines) >= err_idx
-                # If we have data to output, then do so
-                print_next_line()
-            else
-                # Otherwise, wait for more input
-                wait(c.event)
-            end
-        end
+    #     while alive(c.stdout_linestream) || alive(c.stderr_linestream)
+    #         if length(out_lines) >= out_idx || length(err_lines) >= err_idx
+    #             # If we have data to output, then do so
+    #             print_next_line()
+    #         else
+    #             # Otherwise, wait for more input
+    #             wait(c.event)
+    #         end
+    #     end
 
-        # Drain the rest of stdout and stderr
-        while length(out_lines) >= out_idx || length(err_lines) >= err_idx
-            print_next_line()
-        end
-    end
+    #     # Drain the rest of stdout and stderr
+    #     while length(out_lines) >= out_idx || length(err_lines) >= err_idx
+    #         print_next_line()
+    #     end
+    # end
 
-    # Let the collector know that he might have to wait on this `tee()` to
-    # finish its business as well.
-    push!(c.extra_tasks, tee_task)
+    # # Let the collector know that he might have to wait on this `tee()` to
+    # # finish its business as well.
+    # push!(c.extra_tasks, tee_task)
 
-    return tee_task
-end
+    # return tee_task
+#end
 
 end # module OutputCollectors
