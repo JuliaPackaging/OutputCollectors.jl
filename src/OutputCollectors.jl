@@ -7,6 +7,18 @@ import Base: wait, merge
 
 export OutputCollector, merge, collect_stdout, collect_stderr, tail, tee
 
+# Make sure we don't have problems when `Base.have_color` is `nothing`.
+function get_have_color()
+    @static if isdefined(Base, :get_have_color)
+        return Base.get_have_color()
+    else
+        # Compatibility with Julia v1.4-.  Layman check for coloured output on
+        # older Julia versions.  TODO: remove this function when we drop support
+        # for oldere versions of Julia.
+        return something(Base.have_color, false)
+    end
+end
+
 struct LineStream
     pipe::Pipe
     lines::Vector{Tuple{Float64,String}}
@@ -168,7 +180,7 @@ function wait(collector::OutputCollector)
         # If we failed, print out the tail of the output, unless we've been
         # tee()'ing it out this whole time, but only if the user said it's okay.
         if !success(collector.P) && !collector.verbose && collector.tail_error
-            our_tail = tail(collector; colored=Base.have_color)
+            our_tail = tail(collector; colored=get_have_color())
             print(collector.tee_stream, our_tail)
         end
     end
@@ -290,7 +302,7 @@ end
 Spawn a background task to incrementally output lines from `collector` to the
 standard output, optionally colored.
 """
-function tee(c::OutputCollector; colored::Bool=Base.have_color,
+function tee(c::OutputCollector; colored::Bool=get_have_color(),
              stream::IO=stdout)
     tee_task = @async begin
         out_idx = 1
