@@ -1,6 +1,6 @@
 ## OutputCollectors.jl
 
-[![Build Status](https://travis-ci.com/JuliaPackaging/OutputCollectors.jl.svg?branch=master)](https://travis-ci.com/JuliaPackaging/OutputCollectors.jl)
+[![CI](https://github.com/JuliaPackaging/OutputCollectors.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaPackaging/OutputCollectors.jl/actions/workflows/ci.yml)
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliapackaging.github.io/OutputCollectors.jl/stable)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://juliapackaging.github.io/OutputCollectors.jl/dev)
