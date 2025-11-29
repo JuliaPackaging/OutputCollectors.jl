@@ -65,9 +65,7 @@ function LineStream(pipe::Pipe, event::Threads.Condition)
                 break
             end
             push!(lines, (time(), line))
-            lock(event) do
-                notify(event)
-            end
+            Base.@lock event notify(event)
         end
     end
 
@@ -76,9 +74,7 @@ function LineStream(pipe::Pipe, event::Threads.Condition)
     # being alive (e.g. `tee()`) can die alongside us gracefully as well.
     @async begin
         fetch(task)
-        lock(event) do
-            notify(event)
-        end
+        Base.@lock event notify(event)
     end
     return LineStream(pipe, lines, task)
 end
@@ -349,9 +345,7 @@ function tee(c::OutputCollector; colored::Bool=get_have_color(),
 
         # First thing, wait for some input.  This avoids us trying to inspect
         # the liveliness of the linestreams before they've even started.
-        lock(c.event) do
-            wait(c.event)
-        end
+        Base.@lock c.event wait(c.event)
 
         while alive(c.stdout_linestream) || alive(c.stderr_linestream)
             if length(out_lines) >= out_idx || length(err_lines) >= err_idx
@@ -359,9 +353,7 @@ function tee(c::OutputCollector; colored::Bool=get_have_color(),
                 print_next_line()
             else
                 # Otherwise, wait for more input
-                lock(c.event) do
-                    wait(c.event)
-                end
+                Base.@lock c.event wait(c.event)
             end
         end
 
