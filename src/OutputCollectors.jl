@@ -50,7 +50,7 @@ Given a `Pipe` that has been initialized by `spawn()`, create an async Task to
 read in lines as they come in and annotate the time the line was captured for
 later replay/merging with other simultaneously captured streams.
 """
-function LineStream(pipe::Pipe, event::Condition)
+function LineStream(pipe::Pipe, event::Threads.Condition)
     # We always have to close() the input half of the stream before we can
     # read() from it.  I don't know why, and this is honestly kind of annoying
     close(pipe.in)
@@ -101,7 +101,7 @@ mutable struct OutputCollector
     P::Base.AbstractPipe
     stdout_linestream::LineStream
     stderr_linestream::LineStream
-    event::Condition
+    event::Threads.Condition
     tee_stream::IO
     verbose::Bool
     tail_error::Bool
@@ -136,7 +136,7 @@ function OutputCollector(cmd::Base.AbstractCmd; verbose::Bool=false,
     end
 
     # Next, start siphoning off the first couple lines of output and error
-    event = Condition()
+    event = Threads.Condition()
     out_ls = LineStream(out_pipe, event)
     err_ls = LineStream(err_pipe, event)
 
