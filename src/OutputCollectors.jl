@@ -50,7 +50,7 @@ Given a `Pipe` that has been initialized by `spawn()`, create an async Task to
 read in lines as they come in and annotate the time the line was captured for
 later replay/merging with other simultaneously captured streams.
 """
-function LineStream(pipe::Pipe, event::Condition)
+function LineStream(pipe::Pipe, event::Threads.Condition)
     # We always have to close() the input half of the stream before we can
     # read() from it.  I don't know why, and this is honestly kind of annoying
     close(pipe.in)
@@ -65,7 +65,7 @@ function LineStream(pipe::Pipe, event::Condition)
                 break
             end
             push!(lines, (time(), line))
-            notify(event)
+            Base.@lock event notify(event)
         end
     end
 
@@ -74,7 +74,7 @@ function LineStream(pipe::Pipe, event::Condition)
     # being alive (e.g. `tee()`) can die alongside us gracefully as well.
     @async begin
         fetch(task)
-        notify(event)
+        Base.@lock event notify(event)
     end
     return LineStream(pipe, lines, task)
 end
@@ -101,7 +101,7 @@ mutable struct OutputCollector
     P::Base.AbstractPipe
     stdout_linestream::LineStream
     stderr_linestream::LineStream
-    event::Condition
+    event::Threads.Condition
     tee_stream::IO
     verbose::Bool
     tail_error::Bool
@@ -136,7 +136,7 @@ function OutputCollector(cmd::Base.AbstractCmd; verbose::Bool=false,
     end
 
     # Next, start siphoning off the first couple lines of output and error
-    event = Condition()
+    event = Threads.Condition()
     out_ls = LineStream(out_pipe, event)
     err_ls = LineStream(err_pipe, event)
 
@@ -345,7 +345,7 @@ function tee(c::OutputCollector; colored::Bool=get_have_color(),
 
         # First thing, wait for some input.  This avoids us trying to inspect
         # the liveliness of the linestreams before they've even started.
-        wait(c.event)
+        Base.@lock c.event wait(c.event)
 
         while alive(c.stdout_linestream) || alive(c.stderr_linestream)
             if length(out_lines) >= out_idx || length(err_lines) >= err_idx
@@ -353,7 +353,7 @@ function tee(c::OutputCollector; colored::Bool=get_have_color(),
                 print_next_line()
             else
                 # Otherwise, wait for more input
-                wait(c.event)
+                Base.@lock c.event wait(c.event)
             end
         end
 

@@ -1,10 +1,10 @@
 name = "OutputCollectors"
 uuid = "6c11c7d4-943b-4e2b-80de-f2cfc2930a8c"
 authors = ["Elliot Saba <staticfloat@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [compat]
-julia = "1"
+julia = "1.6"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
