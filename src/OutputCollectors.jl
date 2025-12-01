@@ -1,5 +1,6 @@
 module OutputCollectors
 using StyledStrings
+using Base: PipeEndpoint
 
 export OutputCollector, collect_output
 
@@ -26,7 +27,7 @@ end
 
 """
 struct OutputCollector
-    pipes::Dict{String,<:Base.AbstractPipe}
+    pipes::Dict{String,<:Base.PipeEndpoint}
     outputs::Vector{<:IO}
     styles::Dict{String,Symbol}
     line_tasks::Vector{Task}
@@ -34,7 +35,7 @@ struct OutputCollector
     merging_task::Task
 end
 
-function OutputCollector(pipes::Dict{String,<:Base.AbstractPipe},
+function OutputCollector(pipes::Dict{String,<:Base.PipeEndpoint},
                          outputs::Vector{<:IO},
                          styles::Dict{String,Symbol} = Dict{String,Symbol}())
     for name in keys(styles)
@@ -62,12 +63,9 @@ function OutputCollector(pipes::Dict{String,<:Base.AbstractPipe},
             # initialized, so we are forced to fall back to polling like a plebian.
             # Luckily, this shouldn't take too long as we usually create this pipe just
             # before we run the command.
-            while pipe.out.status ∈ (Base.StatusUninit, Base.StatusInit)
+            while pipe.status ∈ (Base.StatusUninit, Base.StatusInit)
                 sleep(0.00001)
             end
-
-            # We always have to close() the input half of the stream before we can read() from it.
-            close(pipe.in)
 
             # Read lines in until we can't anymore.
             while true
@@ -113,8 +111,8 @@ end
 
 # Convenience method to wrap a `Cmd` in a pipeline that will feed to an OutputCollector
 function collect_output(cmd::Base.AbstractCmd, outputs::Vector{<:IO}; stdout_style::Symbol = :default, stderr_style::Symbol = :red)
-    stdout_pipe = Pipe()
-    stderr_pipe = Pipe()
+    stdout_pipe = PipeEndpoint()
+    stderr_pipe = PipeEndpoint()
     pipes = Dict("stdout" => stdout_pipe, "stderr" => stderr_pipe)
     styles = Dict("stdout" => stdout_style, "stderr" => stderr_style)
     oc = OutputCollector(pipes, outputs, styles)

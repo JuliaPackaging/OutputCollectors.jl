@@ -39,6 +39,7 @@ end
     stderr_msg = "Print to stderr"
     cmd = """
     echo $(stdout_msg)
+    sleep 1
     echo $(stderr_msg) > /dev/stderr
     """
     cmd, oc = collect_output(`sh -c $cmd`, [output, output_colored])
